@@ -15,11 +15,11 @@
 #   limitations under the License.
 # 
 #
-message(STATUS "======== CCI CMAKE")
 
 cmake_minimum_required(VERSION 2.8)
 
-message("    ==== WITH_CCI = ${WITH_CCI}")
+message(STATUS "======== CCI CMAKE ==========") 
+message(STATUS "======== WITH_CCI = ${WITH_CCI} ==========")
 
 if(WITH_CCI)
 add_subdirectory(cci)
@@ -621,18 +621,8 @@ endif()
 list(APPEND EP_INCLUDES ${LIBOPENSSL_INCLUDES})
 list(APPEND EP_LIBS ${LIBOPENSSL_LIBS})
 
-# For JVM libraries
-if(WIN32)
-  if(TARGET_PLATFORM_BITS EQUAL 32)
-    set(JVM_LIBS ${JAVA_JVM_LIBRARY})
-  else(TARGET_PLATFORM_BITS EQUAL 32)
-    set(JVM_LIBS ${CMAKE_SOURCE_DIR}/win/external/lib64/jvm.lib)
-  endif(TARGET_PLATFORM_BITS EQUAL 32)
-  list(APPEND JVM_LIBS -DELAYLOAD:jvm.dll)
-endif(WIN32)
-
 # include subdirectories
 add_subdirectory(cci)
-add_subdirectory(tools)
+#add_subdirectory(tools)
 
 endif(WITH_CCI)
