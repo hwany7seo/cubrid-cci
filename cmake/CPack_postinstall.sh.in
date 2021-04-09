@@ -1,6 +1,0 @@
-# Make cubrid start/shutdown automatically.
-if [ -x /sbin/chkconfig ] ; then
-  /sbin/chkconfig --add cubrid
-fi
-chown cubrid:cubrid -R $RPM_INSTALL_PREFIX
-. $RPM_INSTALL_PREFIX/share/rpm/cubrid.sh

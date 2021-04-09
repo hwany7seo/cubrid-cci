@@ -33,10 +33,8 @@ source_dir=`pwd`
 configure_options=""
 # default build_dir = "$source_dir/build_${build_target}_${build_mode}"
 build_dir=""
-prefix_dir=""
 output_dir=""
-build_args="all"
-default_packages="all"
+build_args="build"
 packages=""
 print_version_only=0
 
@@ -49,7 +47,6 @@ typeset -i patch_version
 version=""
 last_checking_msg=""
 output_packages=""
-with_cci="true"
 
 function print_check ()
 {
@@ -150,17 +147,6 @@ function build_initialize ()
 
 function build_clean ()
 {
-  print_check "Cleaning packaging directory"
-  if [ -d $prefix_dir ]; then
-    if [ "$prefix_dir" = "/" ]; then
-      print_fatal "Do not set root dir as install directory"
-    fi
-    
-    print_info "All files in $prefix_dir is removing"
-    rm -rf $prefix_dir/*
-  fi
-  print_result "OK"
-
   print_check "Cleaning build directory"
   if [ -d $build_dir ]; then
     if [ "$build_dir" = "/" ]; then
@@ -189,7 +175,7 @@ function build_configure ()
 
   print_check "Prepare configure options"
   # set up prefix
-  configure_prefix="-DCMAKE_INSTALL_PREFIX=$prefix_dir"
+  configure_prefix="-DCMAKE_INSTALL_PREFIX=$build_dir"
 
   # set up target
   case "$build_target" in
@@ -206,10 +192,6 @@ function build_configure ()
       configure_options="$configure_options -DCMAKE_BUILD_TYPE=RelWithDebInfo" ;;
     debug)
       configure_options="$configure_options -DCMAKE_BUILD_TYPE=Debug" ;;
-    coverage)
-      configure_options="$configure_options -DCMAKE_BUILD_TYPE=Coverage" ;;
-    profile)
-      configure_options="$configure_options -DCMAKE_BUILD_TYPE=Profile" ;;
     *)
       print_fatal "Build mode [$build_mode] is not valid build mode" ;;
   esac
@@ -222,7 +204,6 @@ function build_configure ()
     configure_dir="$source_dir"
   fi
   
-  print_error "build_dir = $build_dir, configure_prefix = $configure_prefix, configure_options = $configure_options, source_dir=$source_dir"
   cmake -E chdir $build_dir cmake $configure_prefix $configure_options $source_dir
   [ $? -eq 0 ] && print_result "OK" || print_fatal "Configuring failed"
 }
@@ -260,11 +241,6 @@ function build_package ()
     print_fatal "Build directory not found. please build first"
   fi
 
-  print_check "Checking manager server directory"
-  if [ ! -d "$source_dir/cubridmanager" -o ! -d "$source_dir/cubridmanager/server" ]; then
-    without_cmserver="true"
-    print_error "Manager server source path is not exist. It will not be packaged"
-  fi
 
   if [ ! -d $output_dir ]; then
     mkdir -p $output_dir
@@ -272,73 +248,17 @@ function build_package ()
   
   print_result "OK"
 
-  for package in $packages; do
-    print_check "Packing package for $package"
-    case $package in
-      src|zip_src)
-	src_package_name="$product_name_lower-$version"
-	if [ "$package" = "src" ]; then
-	  package_name="$src_package_name.tar.gz"
-	  archive_cmd="tar czf $build_dir/$package_name -T -"
-	else
-	  package_name="$src_package_name.zip"
-	  archive_cmd="zip -q $build_dir/$package_name -@"
-	fi
-	# add VERSION-DIST instead of VERSION file for full version string
-	(cd $source_dir && echo "$version" > VERSION-DIST && ln -sfT . cubrid-$version &&
-	  (git ls-files -o VERSION-DIST ; git ls-files &&
-	    (cd $source_dir/cubridmanager && git ls-files) | sed -e "s|^|cubridmanager/|") | sed -e "/^VERSION$/d" -e "s|^|cubrid-$version/|" | $archive_cmd &&
-	    rm cubrid-$version VERSION-DIST)
-	if [ $? -eq 0 ]; then
-	  output_packages="$output_packages $package_name"
-	  [ $build_dir -ef $output_dir ] || mv -f $build_dir/$package_name $output_dir
-	else
-	  false
-	fi
-      ;;
-      tarball|shell|cci|rpm)
-	if [ ! -d "$prefix_dir" ]; then
-	  print_fatal "Prefix directory not found"
-	fi
-
-	if [ "$package" = "cci" ]; then
-          package_basename="$product_name-CCI-$version-Linux.$build_target"
-        else
-          package_basename="$product_name-$version-Linux.$build_target"
-        fi
-	if [ ! "$build_mode" = "release" ]; then
-	  package_basename="$package_basename-$build_mode"
-	fi
-	if [ "$package" = "tarball" ]; then
-	  package_name="$package_basename.tar.gz"
-	  (cd $build_dir && cpack -G TGZ -B $output_dir)
-	elif [ "$package" = "shell" ]; then
-	  package_name="$package_basename.sh"
-	  (cd $build_dir && cpack -G STGZ -B $output_dir)
-	elif [ "$package" = "cci" ]; then
-	  package_name="$package_basename.tar.gz"
-	  (cd $build_dir && cpack -G TGZ -D CPACK_COMPONENTS_ALL="CCI" -B $output_dir)
-	elif [ "$package" = "rpm" ]; then
-	  package_name="$package_basename.rpm"
-	  (cd $build_dir && cpack -G RPM -B $output_dir)
-	fi
-	if [ $? -eq 0 ]; then
-	  output_packages="$output_packages $package_name"
-	  # clean temp directory for pack
-	  rm -rf $output_dir/_CPack_Packages
-	else
-	  false
-	fi
-      ;;
-      jdbc)
-	package_name="JDBC-$build_number-$product_name_lower"
-	jar_files=$(cd $build_dir/jdbc && ls $package_name*.jar)
-	cp $build_dir/jdbc/$package_name*.jar $output_dir
-	[ $? -eq 0 ] && output_packages="$output_packages $jar_files"
-      ;;
-    esac
+  package_basename="$product_name-CCI-$version-Linux.$build_target"
+  package_name="$package_basename.tar.gz"
+  (cd $build_dir && tar zcvfP $package_name $output_dir/include $output_dir/lib)
+  if [ $? -eq 0 ]; then
+    output_packages="$output_packages $package_name"
+    # clean temp directory for pack
+    rm -rf $output_dir/_CPack_Packages
+  else
+    false
+  fi
     [ $? -eq 0 ] && print_result "OK [$package_name]" || print_fatal "Packaging for $package failed"
-  done
 }
 
 
@@ -375,14 +295,7 @@ function show_usage ()
   echo "  -c opts Set configure options; [default: NONE]"
   echo "  -s path Set source path; [default: current directory]"
   echo "  -b path Set build path; [default: <source path>/build_<mode>_<target>]"
-  echo "  -p path Set prefix path; [default: <build_path>/_install/$product_name]"
   echo "  -o path Set package output path; [default: <build_path>]"
-  if [ "x$JAVA_HOME" = "x" ]; then
-    echo "  -j path Set JAVA_HOME path; [default: /usr/java/default]"
-  else
-    echo "  -j path Set JAVA_HOME path; [default: $JAVA_HOME]"
-  fi
-  echo "  -z arg  Package to generate (src,zip_src,shell,tarball,cci,jdbc,rpm,owfs);"
   echo "          [default: all]"
   echo "  -? | -h Show this help message and exit"
   echo ""
@@ -407,9 +320,7 @@ function get_options ()
       m ) build_mode="$OPTARG" ;;
       s ) source_dir="$OPTARG" ;;
       b ) build_dir="$OPTARG" ;;
-      p ) prefix_dir="$OPTARG" ;;
       o ) output_dir="$OPTARG" ;;
-      j ) java_dir="$OPTARG" ;;
       c )
 	for optval in "$OPTARG"
 	do
@@ -446,34 +357,9 @@ function get_options ()
   [ ! -d "$build_dir" ] && mkdir -p $build_dir
   build_dir=$(readlink -f $build_dir)
 
-  if [ "x$prefix_dir" = "x" ]; then
-    prefix_dir="$build_dir/_install/$product_name"
-  else
-    [ ! -d "$prefix_dir" ] && mkdir -p $prefix_dir
-    prefix_dir=$(readlink -f $prefix_dir)
-  fi
-
   source_dir=$(readlink -f $source_dir)
   if [ ! -d "$source_dir" ]; then
     print_fatal "Source path [$source_dir] is not exist"
-  fi
-
-  [ "x$packages" = "x" ] && packages=$default_packages
-  for i in $packages; do
-    if [ "$i" = "all" -o "$i" = "ALL" ]; then
-      packages="all"
-      break
-    fi
-  done
-  if [ "$packages" = "all" -o "$packages" = "ALL" ]; then
-    case $build_mode in
-      release)
-	packages="src zip_src tarball shell cci jdbc rpm"
-	;;
-      *)
-	packages="tarball shell cci"
-	;;
-    esac
   fi
 
   if [ "x$output_dir" = "x" ]; then
