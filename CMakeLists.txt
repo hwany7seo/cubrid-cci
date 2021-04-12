@@ -48,6 +48,10 @@ else()
   message(FATAL_ERROR "OS not supported")
 endif()
 
+# options
+if(UNIX)
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif(UNIX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 message(STATUS "  CMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
@@ -100,7 +104,7 @@ if(VERSION_MATCHES_LENGTH GREATER 3)
 else(VERSION_MATCHES_LENGTH GREATER 3)
   find_package(Git)
   if(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
-    set(CUBRID_MAJOR_START_DATE "2019-12-12")
+    set(CUBRID_MAJOR_START_DATE "2021-04-12")
     execute_process(COMMAND ${GIT_EXECUTABLE} --version
     COMMAND awk "{ printf \"%s\", $3 }"
     OUTPUT_VARIABLE GIT_VERSION
@@ -133,21 +137,13 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
       message(FATAL_ERROR "Could not get count information from Git")
     endif(git_result)
     set(CUBRID_EXTRA_VERSION ${commit_count})
-    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short=7 HEAD
-      OUTPUT_VARIABLE commit_hash RESULT_VARIABLE git_result
-      ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-    if(git_result)
-      message(FATAL_ERROR "Could not get hash information from Git")
-    endif(git_result)
-    set(CUBRID_HASH_TAG -${commit_hash})
     # Generate the same file in other directory to trigger cmake re-configure when the HEAD changes
     configure_file(".git/HEAD" ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HEAD.check_cache COPYONLY)
   else(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
     set(CUBRID_EXTRA_VERSION 0)
   endif(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
 endif(VERSION_MATCHES_LENGTH GREATER 3)
-set(CUBRID_VERSION ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATCH_VERSION}.${CUBRID_EXTRA_VERSION}${CUBRID_HASH_TAG})
+set(CUBRID_VERSION ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATCH_VERSION}.${CUBRID_EXTRA_VERSION})
 
 set(MAJOR_RELEASE_STRING ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION})
 set(PACKAGE_STRING "${PROJECT_NAME} ${MAJOR_RELEASE_STRING}")
@@ -158,11 +154,6 @@ set(RELEASE_STRING ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATC
 # BUILD_NUMBER (digital only version string) for legacy codes
 set(BUILD_NUMBER ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATCH_VERSION}.${CUBRID_EXTRA_VERSION})
 set(BUILD_OS ${CMAKE_SYSTEM_NAME})
-
-if(MSVC)
-  configure_file(cmake/version.rc.cmake version.rc)
-  # TODO: remove version.rc files from win/*
-endif(MSVC)
 
 # Language setting
 #enable_language(C CXX)
@@ -511,6 +502,7 @@ set(COMMON_DEFS SYSV MAXPATHLEN=1024 -D_REENTRANT)
 # For CUBRID environment variable option
 
   message(STATUS "Default install prefix: ${CMAKE_INSTALL_PREFIX}")
+  set(CUBRID_PREFIXDIR .)
   set(CUBRID_BINDIR bin)
   set(CUBRID_LIBDIR lib)
   set(CUBRID_SRCDIR src)
@@ -623,6 +615,8 @@ list(APPEND EP_LIBS ${LIBOPENSSL_LIBS})
 
 # include subdirectories
 add_subdirectory(cci)
-#add_subdirectory(tools)
+add_subdirectory(tools)
 
 endif(WITH_CCI)
+  install(FILES
+    DESTINATION ${CUBRID_PREFIXDIR})

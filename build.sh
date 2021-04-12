@@ -33,6 +33,7 @@ source_dir=`pwd`
 configure_options=""
 # default build_dir = "$source_dir/build_${build_target}_${build_mode}"
 build_dir=""
+prefix_dir=""
 output_dir=""
 build_args="build"
 packages=""
@@ -117,7 +118,7 @@ function build_initialize ()
   minor_version=$(echo $version | cut -d . -f 2)
   patch_version=$(echo $version | cut -d . -f 3)
   extra_version=$(echo $version | cut -d . -f 4)
-  major_start_date='2019-12-12'
+  major_start_date='2021-04-12'
   if [ "x$extra_version" != "x" ]; then
     serial_number=$(echo $extra_version | cut -d - -f 1)
   elif [ -d $source_dir/.git ]; then
@@ -147,6 +148,17 @@ function build_initialize ()
 
 function build_clean ()
 {
+  print_check "Cleaning packaging directory"
+  if [ -d $prefix_dir ]; then
+    if [ "$prefix_dir" = "/" ]; then
+      print_fatal "Do not set root dir as install directory"
+    fi
+    
+    print_info "All files in $prefix_dir is removing"
+    rm -rf $prefix_dir/*
+  fi
+  print_result "OK"
+
   print_check "Cleaning build directory"
   if [ -d $build_dir ]; then
     if [ "$build_dir" = "/" ]; then
@@ -175,7 +187,7 @@ function build_configure ()
 
   print_check "Prepare configure options"
   # set up prefix
-  configure_prefix="-DCMAKE_INSTALL_PREFIX=$build_dir"
+  configure_prefix="-DCMAKE_INSTALL_PREFIX=$prefix_dir"
 
   # set up target
   case "$build_target" in
@@ -250,7 +262,7 @@ function build_package ()
 
   package_basename="$product_name-CCI-$version-Linux.$build_target"
   package_name="$package_basename.tar.gz"
-  (cd $build_dir && tar zcvfP $package_name include lib)
+  (cd $prefix_dir && tar zcvfP $package_name include lib bin && mv $package_name $build_dir)
   if [ $? -eq 0 ]; then
     output_packages="$output_packages $package_name"
     # clean temp directory for pack
@@ -357,6 +369,9 @@ function get_options ()
   [ ! -d "$build_dir" ] && mkdir -p $build_dir
   build_dir=$(readlink -f $build_dir)
 
+  if [ "x$prefix_dir" = "x" ]; then
+    prefix_dir="$build_dir/output"
+  fi
   source_dir=$(readlink -f $source_dir)
   if [ ! -d "$source_dir" ]; then
     print_fatal "Source path [$source_dir] is not exist"
