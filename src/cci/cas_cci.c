@@ -67,9 +67,9 @@
  * OTHER IMPORTED HEADER FILES						*
  ************************************************************************/
 
-#if defined(WINDOWS)
-#include "version.h"
-#endif
+
+#include "version_cci.h"
+
 #include "porting.h"
 #include "cci_common.h"
 #include "cas_cci.h"
@@ -203,7 +203,7 @@ static int reset_connect (T_CON_HANDLE * con_handle, T_REQ_HANDLE * req_handle, 
 /************************************************************************
  * PRIVATE VARIABLES							*
  ************************************************************************/
-static const char *build_number = "VERSION=" MAKE_STR (BUILD_NUMBER);
+static const char *build_number = "VERSION=" MAKE_STR (CCI_BUILD_NUMBER);
 
 #if defined(WINDOWS)
 static HANDLE con_handle_table_mutex;
@@ -329,20 +329,20 @@ int
 cci_get_version (int *major, int *minor, int *patch)
 {
 #ifdef CCI_DEBUG
-  CCI_DEBUG_PRINT (print_debug_msg ("cci_get_version:%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION));
+  CCI_DEBUG_PRINT (print_debug_msg ("cci_get_version:%d.%d.%d", CCI_MAJOR_VERSION, CCI_MINOR_VERSION, CCI_PATCH_VERSION));
 #endif
 
   if (major)
     {
-      *major = MAJOR_VERSION;
+      *major = CCI_MAJOR_VERSION;
     }
   if (minor)
     {
-      *minor = MINOR_VERSION;
+      *minor = CCI_MINOR_VERSION;
     }
   if (patch)
     {
-      *patch = PATCH_VERSION;
+      *patch = CCI_PATCH_VERSION;
     }
   return 0;
 }

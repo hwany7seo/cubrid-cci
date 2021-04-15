@@ -19,9 +19,9 @@
 cmake_minimum_required(VERSION 2.8)
 
 message(STATUS "======== CCI CMAKE ==========") 
-message(STATUS "======== WITH_CCI = ${WITH_CCI} ==========")
 
 if(WITH_CCI)
+message(STATUS "======== WITH_CCI ==========")
 add_subdirectory(cci)
 add_subdirectory(tools)
 else()
@@ -75,85 +75,10 @@ set(WITH_LIBOPENSSL   "${WITH_BUNDLED_PREFIX}" CACHE STRING "Build with openssl 
 
 message(STATUS "Build with Curses library: ${WITH_LIBNCURSES}")
 message(STATUS "Build with openssl library: ${WITH_LIBOPENSSL}")
-# Version info
-# TODO: remove BUILD_NUMBER file and replace with VERSION file
-if(EXISTS ${CMAKE_SOURCE_DIR}/BUILD_NUMBER)
-  set(VERSION_FILE BUILD_NUMBER)
-else(EXISTS ${CMAKE_SOURCE_DIR}/BUILD_NUMBER)
-  message(WARNING "Could not find a BUILD_NUMBER file")
-endif(EXISTS ${CMAKE_SOURCE_DIR}/BUILD_NUMBER)
-message(STATUS "Get version information from ${VERSION_FILE}")
-# Generate the same file in other directory to trigger cmake re-configure when the file changes
-configure_file(${VERSION_FILE} ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${VERSION_FILE}.check_cache COPYONLY)
-file(STRINGS ${VERSION_FILE} VERSION_STR)
-if(VERSION_STR MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(-[a-zA-Z0-9_]+)?")
-  string(REGEX MATCHALL "[0-9]+|-([A-Za-z0-9_]+)" VERSION_MATCHES ${VERSION_STR})
-  list(LENGTH VERSION_MATCHES VERSION_MATCHES_LENGTH)
-  list(GET VERSION_MATCHES 0 CUBRID_MAJOR_VERSION)
-  list(GET VERSION_MATCHES 1 CUBRID_MINOR_VERSION)
-  list(GET VERSION_MATCHES 2 CUBRID_PATCH_VERSION)
-else()
-  message(FATAL_ERROR "Failed to parse a version string from ${VERSION_FILE} file")
-endif()
-
-if(VERSION_MATCHES_LENGTH GREATER 3)
-  list(GET VERSION_MATCHES 3 CUBRID_EXTRA_VERSION)
-  if(VERSION_MATCHES_LENGTH GREATER 4)
-    list(GET VERSION_MATCHES 4 CUBRID_HASH_TAG)
-  endif(VERSION_MATCHES_LENGTH GREATER 4)
-else(VERSION_MATCHES_LENGTH GREATER 3)
-  find_package(Git)
-  if(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
-    set(CUBRID_MAJOR_START_DATE "2021-04-12")
-    execute_process(COMMAND ${GIT_EXECUTABLE} --version
-    COMMAND awk "{ printf \"%s\", $3 }"
-    OUTPUT_VARIABLE GIT_VERSION
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-    if(GIT_VERSION VERSION_GREATER 1.7.6)
-      execute_process(COMMAND ${GIT_EXECUTABLE} rev-list --count --after ${CUBRID_MAJOR_START_DATE} HEAD
-        COMMAND awk "{ printf \"%04d\", $1 }"
-        OUTPUT_VARIABLE commit_count RESULT_VARIABLE git_result
-        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-    else(GIT_VERSION VERSION_GREATER 1.7.6)
-      # If you have trouble with execute_process on Windows, it is likely an issue caused by git installation.
-      # <git-installation-directory>/bin has two files, bash.exe and sh.exe, that messes up CMake's execute_process
-      #
-      # There are two possible fixes for this issue:
-      # 1. Add <git-installation-directory>/usr/bin to %PATH% environment variable
-      # 2. Remove <git-installation-directory>/bin from %PATH% environment variable
-      # You may prefer the first option if you want to use git command in command prompt.
-      #
-      # If both fixes fail, just replace execute_process(...) with set (commit_count 0). It is not a critical step to generate the project.
-      # Also you may send us a message at https://www.cubrid.org/contact
-      execute_process(COMMAND ${GIT_EXECUTABLE} log --after ${CUBRID_MAJOR_START_DATE} --oneline
-        COMMAND wc -l
-        COMMAND awk "{ printf \"%04d\", $1 }"
-        OUTPUT_VARIABLE commit_count RESULT_VARIABLE git_result
-        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-    endif(GIT_VERSION VERSION_GREATER 1.7.6)
-    if(git_result)
-      message(FATAL_ERROR "Could not get count information from Git")
-    endif(git_result)
-    set(CUBRID_EXTRA_VERSION ${commit_count})
-    # Generate the same file in other directory to trigger cmake re-configure when the HEAD changes
-    configure_file(".git/HEAD" ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HEAD.check_cache COPYONLY)
-  else(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
-    set(CUBRID_EXTRA_VERSION 0)
-  endif(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
-endif(VERSION_MATCHES_LENGTH GREATER 3)
-set(CUBRID_VERSION ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATCH_VERSION}.${CUBRID_EXTRA_VERSION})
-
-set(MAJOR_RELEASE_STRING ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION})
-set(PACKAGE_STRING "${PROJECT_NAME} ${MAJOR_RELEASE_STRING}")
-set(PRODUCT_STRING "${MAJOR_RELEASE_STRING}")
-# TODO: change to string type for RELEASE_STRING, BUILD_NUMBER, BUILD_OS
-# TODO: remove #if defined (VERSION_STRING) in src/base/release_string.c
-set(RELEASE_STRING ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATCH_VERSION})
-# BUILD_NUMBER (digital only version string) for legacy codes
-set(BUILD_NUMBER ${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}.${CUBRID_PATCH_VERSION}.${CUBRID_EXTRA_VERSION})
-set(BUILD_OS ${CMAKE_SYSTEM_NAME})
+if(MSVC)
+  configure_file(cmake/version.rc.cmake version.rc)
+  # TODO: remove version.rc files from win/*
+endif(MSVC)
 
 # Language setting
 #enable_language(C CXX)
@@ -445,8 +370,6 @@ endif(UNIX)
 
 
 configure_file(cmake/config.h.cmake config.h)
-# TODO: merge version.h into config.h ?
-configure_file(cmake/version.h.cmake version.h)
 
 # platform specifie configurations
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")

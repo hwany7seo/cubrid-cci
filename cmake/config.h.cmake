@@ -92,7 +92,6 @@
 #cmakedefine ENABLE_SYSTEMTAP 1
 
 #include "system.h"
-#include "version.h"
 
 #endif /* _CONFIG_H_ */
 

@@ -42,12 +42,94 @@ SET_SOURCE_FILES_PROPERTIES(
   PROPERTIES LANGUAGE CXX
   )
 
+GET_FILENAME_COMPONENT(CCI_ROOT_PATH ../ ABSOLUTE)
+GET_FILENAME_COMPONENT(VERSION_FILE_PATH ../BUILD_NUMBER ABSOLUTE)
+
+# Version info
+# TODO: remove BUILD_NUMBER file and replace with VERSION file
+message(WARNING "CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
+message(WARNING "CCI_ROOT_PATH ${CCI_ROOT_PATH}")
+message(WARNING "VERSION_FILE_PATH ${VERSION_FILE_PATH}")
+if(EXISTS ${VERSION_FILE_PATH})
+  set(VERSION_FILE BUILD_NUMBER)
+else(EXISTS ${VERSION_FILE_PATH})
+  message(WARNING "Could not find a BUILD_NUMBER file")
+endif(EXISTS ${VERSION_FILE_PATH})
+message(STATUS "Get version information from ${VERSION_FILE_PATH}")
+# Generate the same file in other directory to trigger cmake re-configure when the file changes
+configure_file(${VERSION_FILE_PATH} ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${VERSION_FILE}.check_cache COPYONLY)
+file(STRINGS ${VERSION_FILE_PATH} VERSION_STR)
+if(VERSION_STR MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(-[a-zA-Z0-9_]+)?")
+  string(REGEX MATCHALL "[0-9]+|-([A-Za-z0-9_]+)" VERSION_MATCHES ${VERSION_STR})
+  list(LENGTH VERSION_MATCHES VERSION_MATCHES_LENGTH)
+  list(GET VERSION_MATCHES 0 CCI_MAJOR_VERSION)
+  list(GET VERSION_MATCHES 1 CCI_MINOR_VERSION)
+  list(GET VERSION_MATCHES 2 CCI_PATCH_VERSION)
+else()
+  message(FATAL_ERROR "Failed to parse a version string from ${VERSION_FILE} file")
+endif()
+
+if(VERSION_MATCHES_LENGTH GREATER 3)
+  list(GET VERSION_MATCHES 3 CCI_EXTRA_VERSION)
+else(VERSION_MATCHES_LENGTH GREATER 3)
+  find_package(Git)
+  if(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
+    set(CUBRID_MAJOR_START_DATE "2021-04-12")
+    execute_process(COMMAND ${GIT_EXECUTABLE} --version
+    COMMAND awk "{ printf \"%s\", $3 }"
+    OUTPUT_VARIABLE GIT_VERSION
+    WORKING_DIRECTORY ${CCI_ROOT_PATH})
+    if(GIT_VERSION VERSION_GREATER 1.7.6)
+      execute_process(COMMAND ${GIT_EXECUTABLE} rev-list --count --after ${CUBRID_MAJOR_START_DATE} HEAD
+        COMMAND awk "{ printf \"%04d\", $1 }"
+        OUTPUT_VARIABLE commit_count RESULT_VARIABLE git_result
+        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+        WORKING_DIRECTORY ${CCI_ROOT_PATH})
+    else(GIT_VERSION VERSION_GREATER 1.7.6)
+      # If you have trouble with execute_process on Windows, it is likely an issue caused by git installation.
+      # <git-installation-directory>/bin has two files, bash.exe and sh.exe, that messes up CMake's execute_process
+      #
+      # There are two possible fixes for this issue:
+      # 1. Add <git-installation-directory>/usr/bin to %PATH% environment variable
+      # 2. Remove <git-installation-directory>/bin from %PATH% environment variable
+      # You may prefer the first option if you want to use git command in command prompt.
+      #
+      # If both fixes fail, just replace execute_process(...) with set (commit_count 0). It is not a critical step to generate the project.
+      # Also you may send us a message at https://www.cubrid.org/contact
+      execute_process(COMMAND ${GIT_EXECUTABLE} log --after ${CUBRID_MAJOR_START_DATE} --oneline
+        COMMAND wc -l
+        COMMAND awk "{ printf \"%04d\", $1 }"
+        OUTPUT_VARIABLE commit_count RESULT_VARIABLE git_result
+        ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
+        WORKING_DIRECTORY ${CCI_ROOT_PATH})
+    endif(GIT_VERSION VERSION_GREATER 1.7.6)
+    if(git_result)
+      message(FATAL_ERROR "Could not get count information from Git")
+    endif(git_result)
+    set(CCI_EXTRA_VERSION ${commit_count})
+    # Generate the same file in other directory to trigger cmake re-configure when the HEAD changes
+    configure_file("${CCI_ROOT_PATH}/.git/HEAD" ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HEAD.check_cache COPYONLY)
+  else(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND GIT_FOUND)
+    set(CUBRID_EXTRA_VERSION 0)
+  endif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND GIT_FOUND)
+endif(VERSION_MATCHES_LENGTH GREATER 3)
+set(CCI_BUILD_NUMBER ${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}.${CCI_PATCH_VERSION}.${CCI_EXTRA_VERSION})
+
+message(WARNING "CCI_BUILD_NUMBER ${CCI_BUILD_NUMBER}")
+message(WARNING "CCI_MAJOR_VERSION ${CCI_MAJOR_VERSION}")
+message(WARNING "CCI_MINOR_VERSION ${CCI_MINOR_VERSION}")
+message(WARNING "CCI_PATCH_VERSION ${CCI_PATCH_VERSION}")
+message(WARNING "CCI_EXTRA_VERSION ${CCI_EXTRA_VERSION}")
+
+# TODO: merge version.h into config.h ?
+configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/version_cci.h)
+
 add_library(cascci_object OBJECT ${CASCCI_SOURCES})
 target_include_directories(cascci_object PRIVATE ${EP_INCLUDES})
 set_property(TARGET cascci_object PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(cascci SHARED $<TARGET_OBJECTS:cascci_object>)
-set_target_properties(cascci PROPERTIES SOVERSION "${CUBRID_MAJOR_VERSION}.${CUBRID_MINOR_VERSION}")
+set_target_properties(cascci PROPERTIES SOVERSION "${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}")
 set_target_properties(cascci PROPERTIES PUBLIC_HEADER "${CCI_DIR}/cas_cci.h;${COMPAT_DIR}/dbtran_def.h;${BROKER_DIR}/cas_error.h")
 target_link_libraries(cascci LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(cascci ${CMAKE_DL_LIBS})
