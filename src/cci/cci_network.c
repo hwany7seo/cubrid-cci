@@ -71,9 +71,6 @@
 #include "cci_query_execute.h"
 #include "cci_util.h"
 #include "cci_ssl.h"
-#if defined(WINDOWS)
-#include "version.h"
-#endif
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>

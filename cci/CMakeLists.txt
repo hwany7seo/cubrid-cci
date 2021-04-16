@@ -152,7 +152,9 @@ if(WIN32)
   target_link_libraries(cascci LINK_PRIVATE ws2_32)
 endif(WIN32)
 
+if(WITH_CCI)
 add_dependencies(cascci ${EP_TARGETS})
+endif(WITH_CCI)
 
 install(TARGETS cascci
   RUNTIME DESTINATION ${CUBRID_BINDIR} COMPONENT CCI
