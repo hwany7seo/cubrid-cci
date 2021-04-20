@@ -47,8 +47,6 @@ GET_FILENAME_COMPONENT(VERSION_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../BUILD_NU
 
 # Version info
 # TODO: remove BUILD_NUMBER file and replace with VERSION file
-message(WARNING "CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}")
-message(WARNING "VERSION_FILE_PATH ${VERSION_FILE_PATH}")
 if(EXISTS ${VERSION_FILE_PATH})
   set(VERSION_FILE BUILD_NUMBER)
 else(EXISTS ${VERSION_FILE_PATH})
@@ -115,14 +113,15 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
 endif(VERSION_MATCHES_LENGTH GREATER 3)
 set(CCI_BUILD_NUMBER ${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}.${CCI_PATCH_VERSION}.${CCI_EXTRA_VERSION})
 
-message(WARNING "CCI_BUILD_NUMBER ${CCI_BUILD_NUMBER}")
-message(WARNING "CCI_MAJOR_VERSION ${CCI_MAJOR_VERSION}")
-message(WARNING "CCI_MINOR_VERSION ${CCI_MINOR_VERSION}")
-message(WARNING "CCI_PATCH_VERSION ${CCI_PATCH_VERSION}")
-message(WARNING "CCI_EXTRA_VERSION ${CCI_EXTRA_VERSION}")
-
-# TODO: merge version.h into config.h ?
+# TODO: for only version_cci.h
 configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/version_cci.h)
+if(WIN32)
+execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER} > CCI_VERSION_DIST
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+else(WIN32)
+execute_process(COMMAND sh -c "echo ${CCI_BUILD_NUMBER} > CCI_VERSION_DIST"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif(WIN32)
 
 add_library(cascci_object OBJECT ${CASCCI_SOURCES})
 target_include_directories(cascci_object PRIVATE ${EP_INCLUDES})
@@ -135,10 +134,14 @@ target_link_libraries(cascci LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(cascci ${CMAKE_DL_LIBS})
 
 if(NOT WITH_CCI)
+#change RUNTIME_LIB OPTION for static lib
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 add_library(cascci_static STATIC $<TARGET_OBJECTS:cascci_object>)
 set_target_properties(cascci_static PROPERTIES OUTPUT_NAME cascci)
 target_link_libraries(cascci_static LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(cascci_static ${CMAKE_DL_LIBS})
+#change DEFAULT RUNTIME_LIB OPTION
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
 endif(NOT WITH_CCI)
 
 if(WIN32)
