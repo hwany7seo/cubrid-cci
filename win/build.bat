@@ -22,13 +22,12 @@ SETLOCAL
 rem CUBRID build script for MS Windows.
 rem
 rem Requirements
-rem - cmake, ant, zip, md5sum, gnu flex, bison
-rem - wix for msi installer
+rem - cmake
+rem - default VS2017 (for windows)
+rem - optional VS2015, VS2012
 rem - Windows 2003 or later
 
 if NOT "%OS%"=="Windows_NT" echo "ERROR: Not supported OS" & GOTO :EOF
-rem - JAVA_HOME environment variable must be set to make JDBC package
-if "%JAVA_HOME%" == "" echo "ERROR: JAVA_HOME variable is not set" & GOTO :EOF
 
 rem clear ERRORLEVEL
 
@@ -39,6 +38,7 @@ set VERSION=0
 set VERSION_FILE=BUILD_NUMBER
 set BUILD_NUMBER=0
 set BUILD_GENERATOR="Visual Studio 15 2017"
+set BUILD_GEN_VERSION=V141
 set BUILD_TARGET=x64
 set BUILD_MODE=Release
 set BUILD_TYPE=RelWithDebInfo
@@ -46,7 +46,7 @@ set CMAKE_PATH=C:\Program Files\CMake\bin\cmake.exe
 set CPACK_PATH=C:\Program Files\CMake\bin\cpack.exe
 set GIT_PATH=C:\Program Files\Git\bin\git.exe
 rem default list is all
-set BUILD_LIST=ALL
+set BUILD_LIST=build
 rem unset BUILD_ARGS
 if NOT "%BUILD_ARGS%." == "." set BUILD_ARGS=
 
@@ -59,19 +59,25 @@ if NOT "%DIST_PKGS%." == "." set DIST_PKGS=
 :CHECK_OPTION
 if "%~1." == "."       GOTO :BUILD
 set BUILD_OPTION=%1
-if /I "%~1" == "/g"       set "BUILD_GENERATOR=%~2"&shift
-if "%~1" == "/32"         set BUILD_TARGET=Win32
-if "%~1" == "/64"         set BUILD_TARGET=x64
-if /I "%~1" == "/debug"   set "BUILD_MODE=Debug" & set BUILD_TYPE=Debug
-if /I "%~1" == "/release" set "BUILD_MODE=Release" & set BUILD_TYPE=RelWithDebInfo
-if /I "%~1" == "/out"     set DIST_DIR=%2&shift
+set CHECK_OPTION=false
+if "%~1" == "/32"         set BUILD_TARGET=Win32& set CHECK_OPTION=true
+if "%~1" == "/64"         set BUILD_TARGET=x64& set CHECK_OPTION=true
+if /I "%~1" == "/debug"   set "BUILD_MODE=Debug"& set BUILD_TYPE=Debug& set CHECK_OPTION=true
+if /I "%~1" == "/release" set "BUILD_MODE=Release"& set BUILD_TYPE=RelWithDebInfo& set CHECK_OPTION=true
+if /I "%~1" == "/vs2017"  set BUILD_GENERATOR="Visual Studio 15 2017"& set BUILD_GEN_VERSION=V141& set CHECK_OPTION=true
+if /I "%~1" == "/vs2015"  set BUILD_GENERATOR="Visual Studio 14 2015"& set BUILD_GEN_VERSION=V140& set CHECK_OPTION=true
+if /I "%~1" == "/vs2012"  set BUILD_GENERATOR="Visual Studio 11 2012"& set BUILD_GEN_VERSION=V110& set CHECK_OPTION=true
 if "%~1" == "/h"          GOTO :SHOW_USAGE
 if "%~1" == "/?"          GOTO :SHOW_USAGE
 if "%~1" == "/help"       GOTO :SHOW_USAGE
-if NOT "%BUILD_OPTION:~0,1%" == "/" set BUILD_ARGS=%BUILD_ARGS% %1
+if NOT "%BUILD_OPTION:~0,1%" == "/" (
+  set BUILD_ARGS=%BUILD_ARGS% %1
+) else if %CHECK_OPTION%==false (
+  echo not found option [%BUILD_OPTION%]
+  GOTO :SHOW_USAGE
+)
 shift
 GOTO :CHECK_OPTION
-
 
 
 :BUILD
@@ -84,16 +90,13 @@ for /f "tokens=* delims= " %%a IN ("%BUILD_LIST%") DO set BUILD_LIST=%%a
 echo Build list is [%BUILD_LIST%].
 set BUILD_LIST=%BUILD_LIST:ALL=BUILD DIST%
 set BUILD_LIST=%BUILD_LIST:BUILD=CUBRID%
-
-rem To package JDBC, add JDBC_PACKAGE at the following
 set BUILD_LIST=%BUILD_LIST:DIST=CCI_PACKAGE%
-
-call :BUILD_PREPARE
-if ERRORLEVEL 1 echo *** [%DATE% %TIME%] Preparing failed. & GOTO :EOF
 
 for %%i IN (%BUILD_LIST%) DO (
   echo.
   echo [%DATE% %TIME%] Entering target [%%i]
+  call :BUILD_PREPARE
+  if ERRORLEVEL 1 echo *** [%DATE% %TIME%] Preparing failed. & GOTO :EOF
   call :BUILD_%%i
   if ERRORLEVEL 1 echo *** [%DATE% %TIME%] Failed target [%%i] & GOTO :EOF
   echo [%DATE% %TIME%] Leaving target [%%i]
@@ -150,15 +153,15 @@ if NOT "%EXTRA_VERSION%." == "." (
 set EXTRA_VERSION=%SERIAL_NUMBER:~-4%
 echo Build Version is [%VERSION% (%MAJOR_VERSION%.%MINOR_VERSION%.%PATCH_VERSION%.%EXTRA_VERSION%)]
 set VERSION=%MAJOR_VERSION%.%MINOR_VERSION%.%PATCH_VERSION%.%EXTRA_VERSION%
-set BUILD_NUMBER=%MAJOR_VERSION%.%MINOR_VERSION%.%PATCH_VERSION%.%SERIAL_NUMBER%
+set BUILD_NUMBER=%MAJOR_VERSION%.%MINOR_VERSION%.%PATCH_VERSION%.%EXTRA_VERSION%
 
 if "%BUILD_TARGET%" == "Win32" (set CUBRID_CCI_PACKAGE_NAME=CUBRID-CCI-Windows-x86-%VERSION%) ELSE set CUBRID_CCI_PACKAGE_NAME=CUBRID-CCI-Windows-x64-%VERSION%
 
-set BUILD_DIR=%SOURCE_DIR%\build_%BUILD_MODE%_%BUILD_TARGET%
+set BUILD_DIR=%SOURCE_DIR%\build_%BUILD_MODE%_%BUILD_TARGET%_%BUILD_GEN_VERSION%
 if NOT EXIST "%BUILD_DIR%" md %BUILD_DIR%
 
 rem TODO move build_prefix
-set BUILD_PREFIX=%SOURCE_DIR%\win\output\CUBRID_%BUILD_MODE%_%BUILD_TARGET%
+set BUILD_PREFIX=%SOURCE_DIR%\win\output\CUBRID_%BUILD_MODE%_%BUILD_TARGET%_%BUILD_GEN_VERSION%
 echo Build install directory is [%BUILD_PREFIX%].
 
 if "%DIST_DIR%." == "." set DIST_DIR=%BUILD_DIR%\output
@@ -178,6 +181,8 @@ if "%BUILD_TARGET%" == "Win32" (
 ) ELSE (
   set CMAKE_GENERATOR="%BUILD_GENERATOR:"=% Win64"
 )
+echo CMAKE_GENERATOR is [%CMAKE_GENERATOR%]
+
 "%CMAKE_PATH%" -G %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PREFIX=%BUILD_PREFIX% -DPARALLEL_JOBS=10 -DCUBRID_CCI_PACKAGE_NAME=%CUBRID_CCI_PACKAGE_NAME% %SOURCE_DIR%
 if ERRORLEVEL 1 (echo FAILD. & GOTO :EOF) ELSE echo OK.
 
@@ -212,34 +217,36 @@ if NOT defined FOUNDINPATH if NOT EXIST %3 echo Executable [%1] is not found & G
 call echo Executable [%1] is found at [%%%2%%]
 GOTO :EOF
 
-:BUILD_CLEAN
 
+:BUILD_CLEAN
 del /Q /S %BUILD_DIR% >nul 2>&1
 rmdir /s /q %BUILD_DIR% >nul 2>&1
-del /Q /S %SOURCE_DIR%\win\output\ >nul 2>&1
-rmdir /s /q %SOURCE_DIR%\win\output\ >nul 2>&1
+del /Q /S %BUILD_PREFIX% >nul 2>&1
+rmdir /s /q %BUILD_PREFIX% >nul 2>&1
 GOTO :EOF
 
+
 :SHOW_USAGE
-@echo.Usage: %0 [OPTION] [TARGET]
-@echo.Build and package scrtip for CUBRID CCI (with tools - cci_applier)
+@echo.Usage: build.bat [OPTION] [TARGET]
+@echo.Build and package script for CUBRID CCI (with tools - cci_applier)
 @echo. OPTIONS
-@echo.  /G Generator       Specify a build generator (default: %BUILD_GENERATOR%)
 @echo.  /32      or /64    Build 32bit or 64bit applications (default: 64)
 @echo.  /Release or /Debug Build with release or debug mode (default: %BUILD_MODE%)
-@echo.  /out DIR           Package output directory (default: win\install\Installshield)
+@echo.  /vs2017            Build to default generator for CAS_CLIENT_CCI (default: %BUILD_GENERATOR%)
+@echo.  /vs2015 or /vs2012 Build to select generator for CAS_CLIENT_ODBC
 @echo.  /help /h /?        Display this help message and exit
 @echo.
 @echo. TARGETS
-@echo.  ALL                BUILD and DIST (default)
-@echo.  BUILD              Build all applications
-@echo.  DIST               Create all packages (msi, zip, CCI)
+@echo.  all                BUILD and DIST
+@echo.  build              Build all applications (default)
+@echo.  dist               Create CCI packages (zip file)
 @echo.
 @echo. Examples:
-@echo.  %0                 # Build and pack all packages with default option
-@echo.  %0 CLEAN(clean)    # clean
-@echo.  %0 /32 BUILD       # 32bit release build only
-@echo.  %0 /64 /Debug DIST # Create 64bit debug mode packages
+@echo.  build.bat                        # Build and pack CCI packages with default option
+@echo.  build.bat clean                  # clean
+@echo.  build.bat /32 build              # 32bit release build only
+@echo.  build.bat /64 /debug dist        # Create 64bit debug mode packages
+@echo.  build.bat /vs2012 /64 /debug all # 64bit debug mode Build and pack CCI packages with vs2012 generator
 GOTO :EOF
 
 

@@ -46,7 +46,6 @@ GET_FILENAME_COMPONENT(CCI_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../ ABSOLUTE)
 GET_FILENAME_COMPONENT(VERSION_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../BUILD_NUMBER ABSOLUTE)
 
 # Version info
-# TODO: remove BUILD_NUMBER file and replace with VERSION file
 if(EXISTS ${VERSION_FILE_PATH})
   set(VERSION_FILE BUILD_NUMBER)
 else(EXISTS ${VERSION_FILE_PATH})
@@ -70,7 +69,6 @@ if(VERSION_MATCHES_LENGTH GREATER 3)
   list(GET VERSION_MATCHES 3 CCI_EXTRA_VERSION)
 else(VERSION_MATCHES_LENGTH GREATER 3)
   find_package(Git)
-  message(WARNING "CCI_ROOT_PATH ${CCI_ROOT_PATH}")
   if(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
     set(CUBRID_MAJOR_START_DATE "2021-04-12")
     execute_process(COMMAND ${GIT_EXECUTABLE} --version
@@ -113,7 +111,7 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
 endif(VERSION_MATCHES_LENGTH GREATER 3)
 set(CCI_BUILD_NUMBER ${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}.${CCI_PATCH_VERSION}.${CCI_EXTRA_VERSION})
 
-# TODO: for only version_cci.h
+# TODO: for only cci version (version_cci.h)
 configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/version_cci.h)
 if(WIN32)
 execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER} > CCI_VERSION_DIST
@@ -149,8 +147,9 @@ if(WIN32)
   if(TARGET_PLATFORM_BITS EQUAL 32)
     target_compile_definitions(cascci PRIVATE _USE_32BIT_TIME_T)
   endif(TARGET_PLATFORM_BITS EQUAL 32)
-  # TODO: remove version.h in win/ directory
-  target_include_directories(cascci PRIVATE ${CMAKE_SOURCE_DIR}/win)
+  if(FOR_OTHER_DRIVER)
+    target_compile_definitions(cascci PRIVATE CCI_OLEDB)
+  endif(FOR_OTHER_DRIVER)
   set_target_properties(cascci PROPERTIES LINK_FLAGS "/DEF:\"${CMAKE_SOURCE_DIR}/win/cascci/cascci.def\"" LINK_FLAGS_RELEASE "/NODEFAULTLIB:libcmt.lib" LINK_FLAGS_DEBUG "/NODEFAULTLIB:msvcrt.lib")
   target_link_libraries(cascci LINK_PRIVATE ws2_32)
 endif(WIN32)

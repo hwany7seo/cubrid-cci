@@ -18,13 +18,12 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-message(STATUS "======== CCI CMAKE ==========") 
-
 if(WITH_CCI)
 message(STATUS "======== WITH_CCI ==========")
 add_subdirectory(cci)
 add_subdirectory(tools)
-else()
+else(WITH_CCI)
+message(STATUS "======== CCI REPO MAKE ==========") 
 #also searches for modules onto cubrid/cmake
 # add other Find[LIBRARY].cmake scripts in cubrid/cmake
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -175,61 +174,22 @@ endif()
 message(STATUS "Build ${PROJECT_NAME} ${CUBRID_VERSION} ${TARGET_PLATFORM_BITS}bit ${CMAKE_BUILD_TYPE} on ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 # source directories
-set(API_DIR                  ${CMAKE_SOURCE_DIR}/src/api)
 set(BASE_DIR                 ${CMAKE_SOURCE_DIR}/src/base)
 set(BROKER_DIR               ${CMAKE_SOURCE_DIR}/src/broker)
 set(CCI_DIR                  ${CMAKE_SOURCE_DIR}/src/cci)
-set(CM_COMMON_DIR            ${CMAKE_SOURCE_DIR}/src/cm_common)
-set(COMMUNICATION_DIR        ${CMAKE_SOURCE_DIR}/src/communication)
 set(COMPAT_DIR               ${CMAKE_SOURCE_DIR}/src/compat)
-set(CONNECTION_DIR           ${CMAKE_SOURCE_DIR}/src/connection)
-set(EXECUTABLES_DIR          ${CMAKE_SOURCE_DIR}/src/executables)
-set(HEAPLAYERS_DIR           ${CMAKE_SOURCE_DIR}/src/heaplayers)
-set(JDBC_DIR                 ${CMAKE_SOURCE_DIR}/src/jdbc)
-set(JSP_DIR                  ${CMAKE_SOURCE_DIR}/src/jsp)
-set(LOADDB_DIR               ${CMAKE_SOURCE_DIR}/src/loaddb)
-set(MONITOR_DIR              ${CMAKE_SOURCE_DIR}/src/monitor)
-set(OBJECT_DIR               ${CMAKE_SOURCE_DIR}/src/object)
-set(ODBC_DIR                 ${CMAKE_SOURCE_DIR}/src/odbc)
-set(OLEDB_DIR                ${CMAKE_SOURCE_DIR}/src/oledb)
-set(OPTIMIZER_DIR            ${CMAKE_SOURCE_DIR}/src/optimizer)
-set(PARSER_DIR               ${CMAKE_SOURCE_DIR}/src/parser)
-set(QUERY_DIR                ${CMAKE_SOURCE_DIR}/src/query)
-set(REPLICATION_DIR          ${CMAKE_SOURCE_DIR}/src/replication)
-set(SESSION_DIR              ${CMAKE_SOURCE_DIR}/src/session)
-set(STORAGE_DIR              ${CMAKE_SOURCE_DIR}/src/storage)
-set(THREAD_DIR               ${CMAKE_SOURCE_DIR}/src/thread)
 set(TOOLS_DIR                ${CMAKE_SOURCE_DIR}/src/tools)
 set(TRANSACTION_DIR          ${CMAKE_SOURCE_DIR}/src/transaction)
-set(WIN_TOOLS_DIR            ${CMAKE_SOURCE_DIR}/src/win_tools)
-set(XASL_DIR                 ${CMAKE_SOURCE_DIR}/src/xasl)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(
   include
-  src/api
   src/base
   src/broker
   src/cci
-  src/communication
   src/compat
-  src/connection
-  src/executables
-  src/heaplayers
-  src/jsp
-  src/loaddb
-  src/monitor
-  src/object
-  src/optimizer
-  src/parser
-  src/replication
-  src/query
-  src/session
-  src/storage
-  src/thread
   src/tools
   src/transaction
-  src/xasl
   )
 
 include(CheckFunctionExists)
@@ -423,25 +383,10 @@ endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 set(COMMON_DEFS SYSV MAXPATHLEN=1024 -D_REENTRANT)
 
 # For CUBRID environment variable option
-
-  message(STATUS "Default install prefix: ${CMAKE_INSTALL_PREFIX}")
-  set(CUBRID_PREFIXDIR .)
   set(CUBRID_BINDIR bin)
   set(CUBRID_LIBDIR lib)
   set(CUBRID_SRCDIR src)
   set(CUBRID_INCLUDEDIR include)
-  set(CUBRID_VARDIR var)
-  set(CUBRID_DATADIR share)
-  set(CUBRID_CONFDIR conf)
-  set(CUBRID_JAVADIR java)
-  set(CUBRID_LOCALEDIR msg)
-  set(CUBRID_LOGDIR log)
-  set(CUBRID_TMPDIR tmp)
-  set(CUBRID_JDBCDIR jdbc)
-  set(CUBRID_SHLOCALESDIR locales)
-  set(CUBRID_TZDIR timezones)
-  set(CUBRID_DEMODIR demo)
-  set(CUBRID_COMPATDIR compat)
 
 # For external library options
 include(ExternalProject)
@@ -533,11 +478,21 @@ else(WITH_LIOPENSSL STREQUAL "BUNDLED")
     message(STATUS "built-in openssl headers: ${LIBOPENSSL_INCLUDES}")
   else(UNIX)
     if(TARGET_PLATFORM_BITS EQUAL 32)
-      set(LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib_v140/libssl.lib)
-      list(APPEND LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib_v140/libcrypto.lib)
+      if(CMAKE_GENERATOR MATCHES "Visual Studio 11 2012")
+        set(LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib_v110/libssl.lib)
+        list(APPEND LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib_v110/libcrypto.lib)
+      else(CMAKE_GENERATOR MATCHES "Visual Studio 11 2012")
+        set(LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib_v140/libssl.lib)
+        list(APPEND LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib_v140/libcrypto.lib)
+      endif(CMAKE_GENERATOR MATCHES "Visual Studio 11 2012")
     else(TARGET_PLATFORM_BITS EQUAL 32)
-      set(LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib64_v140/libssl.lib)
-      list(APPEND LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib64_v140/libcrypto.lib)
+      if(CMAKE_GENERATOR MATCHES "Visual Studio 11 2012")
+        set(LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib64_v110/libssl.lib)
+        list(APPEND LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib64_v110/libcrypto.lib)
+      else(CMAKE_GENERATOR MATCHES "Visual Studio 11 2012")
+        set(LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib64_v140/libssl.lib)
+        list(APPEND LIBOPENSSL_LIBS ${WINDOWS_EXTERNAL_DIR}/openssl/lib64_v140/libcrypto.lib)
+      endif(CMAKE_GENERATOR MATCHES "Visual Studio 11 2012")
     endif(TARGET_PLATFORM_BITS EQUAL 32) 
     list(APPEND LIBOPENSSL_LIBS Crypt32 Ws2_32)
     set(LIBOPENSSL_INCLUDES ${WINDOWS_EXTERNAL_DIR}/openssl/include)
@@ -550,10 +505,6 @@ list(APPEND EP_LIBS ${LIBOPENSSL_LIBS})
 add_subdirectory(cci)
 add_subdirectory(tools)
 
-endif(WITH_CCI)
-  install(FILES
-    DESTINATION ${CUBRID_PREFIXDIR})
-
 # for packaging info
 if(UNIX)
   set(CPACK_GENERATOR "STGZ;TGZ")
@@ -565,19 +516,8 @@ endif(UNIX)
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CUBRID Open Source RDBMS")
 set(CPACK_PACKAGE_VENDOR "CUBRID Corporation")
-set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
-# for WiX (txt file extension is required)
-configure_file(COPYING LICENSE.txt)
-set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_BINARY_DIR}/LICENSE.txt")
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-  set(CUBRID_PACKAGE_FILE_SUFFIX "-debug")
-elseif(CMAKE_BUILD_TYPE MATCHES "Coverage")
-  set(CUBRID_PACKAGE_FILE_SUFFIX "-coverage")
-elseif(CMAKE_BUILD_TYPE MATCHES "Profile")
-  set(CUBRID_PACKAGE_FILE_SUFFIX "-profile")
-else(CMAKE_BUILD_TYPE MATCHES "Debug")
-  set(CUBRID_PACKAGE_FILE_SUFFIX "")
-endif(CMAKE_BUILD_TYPE MATCHES "Debug")
 set(CPACK_PACKAGE_FILE_NAME "${CUBRID_CCI_PACKAGE_NAME}")
 
 include(CPack)
+
+endif(WITH_CCI)

@@ -21,6 +21,7 @@
 # Requirements
 # - Bash shell
 # - Build tool - cmake, gcc
+# - Lib - libncurses
 # - Utils - GNU tar, git, ...
 
 # scrtip directory
@@ -262,7 +263,8 @@ function build_package ()
 
   package_basename="$product_name-CCI-$version-Linux.$build_target"
   package_name="$package_basename.tar.gz"
-  (cd $prefix_dir && tar zcvfP $package_name include lib bin && mv $package_name $build_dir)
+  package_dir=$product_name-CCI-$version-Linux-$build_target
+  (cd $prefix_dir && mkdir -p $prefix_dir/$package_dir && cp -rf include lib $prefix_dir/$package_dir && tar zcvfP $package_name $package_dir && mv $package_name $build_dir)
   if [ $? -eq 0 ]; then
     output_packages="$output_packages $package_name"
     # clean temp directory for pack
@@ -299,63 +301,35 @@ function build_post ()
 function show_usage ()
 {
   echo "Usage: $0 [OPTIONS] [TARGET]"
+  echo "Note. CCI Driver no longer support Target platform 32bit in Linux"
+  echo ""
   echo " OPTIONS"
-  echo "  -t arg  Set target machine (32(i386) or 64(x86_64)); [default: 64]"
-  echo "  -m      Set build mode(release, debug or coverage); [default: release]"
-  echo "  -i      Increase build number; [default: no]"
-  echo "  -a      Run autogen.sh before build; [default: yes]"
-  echo "  -c opts Set configure options; [default: NONE]"
-  echo "  -s path Set source path; [default: current directory]"
-  echo "  -b path Set build path; [default: <source path>/build_<mode>_<target>]"
-  echo "  -o path Set package output path; [default: <build_path>]"
+  echo "  -m      Set build mode(release, debug); [default: release]"
   echo "          [default: all]"
   echo "  -? | -h Show this help message and exit"
   echo ""
   echo " TARGET"
-  echo "  all     Build and create packages (default)"
-  echo "  build   Build only"
+  echo "  all     Build and create packages "
+  echo "  build   Build only (default)"
   echo "  dist    Create packages only"
   echo ""
   echo " EXAMPLES"
   echo "  $0                         # Build and pack all packages (64/release)"
-  echo "  $0 -t 32 build             # 32bit release build only"
-  echo "  $0 -t 64 -m debug dist     # Create 64bit debug mode packages"
+  echo "  $0 -m debug dist     # Create 64bit debug mode packages"
   echo ""
 }
 
 
 function get_options ()
 {
-  while getopts ":t:m:is:b:p:o:aj:c:z:vh" opt; do
+  while getopts ":m:vh" opt; do
     case $opt in
-      t ) build_target="$OPTARG" ;;
       m ) build_mode="$OPTARG" ;;
-      s ) source_dir="$OPTARG" ;;
-      b ) build_dir="$OPTARG" ;;
-      o ) output_dir="$OPTARG" ;;
-      c )
-	for optval in "$OPTARG"
-	do
-	  configure_options="$configure_options $optval"
-	done
-      ;;
-      z )
-	for optval in "$OPTARG"
-	do
-	  packages="$packages $optval"
-	done
-      ;;
       v ) print_version_only=1 ;;
       h|\?|* ) show_usage; exit 1;;
     esac
   done
   shift $(($OPTIND - 1))
-
-  case $build_target in
-    i386|x86|32|32bit) build_target="i386";;
-    x86_64|x64|64|64bit) build_target="x86_64";;
-    *) show_usage; print_fatal "Target [$build_target] is not valid target" ;;
-  esac
 
   case $build_mode in
     release|debug|coverage);;
@@ -436,7 +410,10 @@ function build_build ()
     build_$target
     if [ $? -ne 0 ]; then
       echo ""
-      print_fatal "*** [`date +'%F %T'`] Failed target [$target]"
+      print_error "*** [`date +'%F %T'`] Failed target [$target]"
+      echo ""
+      show_usage;
+      exit 1
     fi
     echo ""
     echo "[`date +'%F %T'`] Leaving target [$target]"
