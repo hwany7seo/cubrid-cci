@@ -44,16 +44,19 @@ SET_SOURCE_FILES_PROPERTIES(
 
 GET_FILENAME_COMPONENT(CCI_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../ ABSOLUTE)
 GET_FILENAME_COMPONENT(VERSION_FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../BUILD_NUMBER ABSOLUTE)
+GET_FILENAME_COMPONENT(VERSION_DIST_FILE_PATH ${CCI_ROOT_PATH}/CCI-VERSION-DIST ABSOLUTE)
 
 # Version info
 if(EXISTS ${VERSION_FILE_PATH})
   set(VERSION_FILE BUILD_NUMBER)
+elseif(EXISTS ${VERSION_DIST_FILE_PATH})
+  set(VERSION_FILE VERSION_DIST_FILE_PATH)
 else(EXISTS ${VERSION_FILE_PATH})
   message(WARNING "Could not find a BUILD_NUMBER file")
 endif(EXISTS ${VERSION_FILE_PATH})
 message(STATUS "Get version information from ${VERSION_FILE_PATH}")
 # Generate the same file in other directory to trigger cmake re-configure when the file changes
-configure_file(${VERSION_FILE_PATH} ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${VERSION_FILE}.check_cache COPYONLY)
+# configure_file(${VERSION_FILE_PATH} ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${VERSION_FILE}.check_cache COPYONLY)
 file(STRINGS ${VERSION_FILE_PATH} VERSION_STR)
 if(VERSION_STR MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(-[a-zA-Z0-9_]+)?")
   string(REGEX MATCHALL "[0-9]+|-([A-Za-z0-9_]+)" VERSION_MATCHES ${VERSION_STR})
@@ -104,7 +107,7 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
     endif(git_result)
     set(CCI_EXTRA_VERSION ${commit_count})
     # Generate the same file in other directory to trigger cmake re-configure when the HEAD changes
-    configure_file("${CCI_ROOT_PATH}/.git/HEAD" ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HEAD.check_cache COPYONLY)
+    # configure_file("${CCI_ROOT_PATH}/.git/HEAD" ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/HEAD.check_cache COPYONLY)
   else(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
     set(CUBRID_EXTRA_VERSION 0)
   endif(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
@@ -114,11 +117,11 @@ set(CCI_BUILD_NUMBER ${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}.${CCI_PATCH_VERSI
 # TODO: for only cci version (version_cci.h)
 configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/version_cci.h)
 if(WIN32)
-execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER} > CCI_VERSION_DIST
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER} > CCI-VERSION-DIST
+        WORKING_DIRECTORY ${CCI_ROOT_PATH})
 else(WIN32)
-execute_process(COMMAND sh -c "echo ${CCI_BUILD_NUMBER} > CCI_VERSION_DIST"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+execute_process(COMMAND sh -c "echo ${CCI_BUILD_NUMBER} > CCI-VERSION-DIST"
+        WORKING_DIRECTORY ${CCI_ROOT_PATH})
 endif(WIN32)
 
 add_library(cascci_object OBJECT ${CASCCI_SOURCES})

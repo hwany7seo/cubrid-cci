@@ -173,6 +173,10 @@ function build_clean ()
       rm -rf $build_dir/*
     fi
   fi
+
+  if [ -f $source_dir/CCI-VERSION-DIST ]; then
+	rm -rf $source_dir/CCI-VERSION-DIST
+  fi
   print_result "OK"
 }
 

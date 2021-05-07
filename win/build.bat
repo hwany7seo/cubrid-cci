@@ -223,6 +223,7 @@ del /Q /S %BUILD_DIR% >nul 2>&1
 rmdir /s /q %BUILD_DIR% >nul 2>&1
 del /Q /S %BUILD_PREFIX% >nul 2>&1
 rmdir /s /q %BUILD_PREFIX% >nul 2>&1
+del /Q /S %SOURCE_DIR%/CCI-VERSION-DIST >nul 2>&1
 GOTO :EOF
 
 
