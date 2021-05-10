@@ -120,10 +120,10 @@ message(WARRING "CCI_BUILD_NUMBER:[${CCI_BUILD_NUMBER}]")
 configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/version_cci.h)
 
 if(WIN32)
-execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER} > CCI-VERSION-DIST
+execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER}>CCI-VERSION-DIST
         WORKING_DIRECTORY ${CCI_ROOT_PATH})
 else(WIN32)
-execute_process(COMMAND sh -c "echo ${CCI_BUILD_NUMBER} > CCI-VERSION-DIST"
+execute_process(COMMAND sh -c "echo ${CCI_BUILD_NUMBER}>CCI-VERSION-DIST"
         WORKING_DIRECTORY ${CCI_ROOT_PATH})
 endif(WIN32)
 
