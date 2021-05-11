@@ -18,11 +18,17 @@
 
 
 /*
- * cas_protocol.h -
+ * broker_cas_protocol.h -
+ *
+ * CAUTION!
+ *
+ * In case of common,  
+ * engine source (src/broker/cas_protocol.h) must be updated,
+ * becuase CCI source and Engine source have been separated.
  */
 
-#ifndef _CAS_PROTOCOL_H_
-#define _CAS_PROTOCOL_H_
+#ifndef _BROKER_CAS_PROTOCOL_H_
+#define _BROKER_CAS_PROTOCOL_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -360,4 +366,12 @@ extern "C"
 }
 #endif
 
-#endif				/* _CAS_PROTOCOL_H_ */
+ /*
+ * CAUTION!
+ *
+ * In case of common,  
+ * engine source (src/broker/cas_protocol.h) must be updated,
+ * becuase CCI source and Engine source have been separated.
+ */
+
+#endif				/* _BROKER_CAS_PROTOCOL_H_ */
