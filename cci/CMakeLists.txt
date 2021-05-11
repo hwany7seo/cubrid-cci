@@ -75,13 +75,14 @@ if(VERSION_MATCHES_LENGTH GREATER 3)
 else(VERSION_MATCHES_LENGTH GREATER 3)
   find_package(Git)
   if(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
-    set(CUBRID_MAJOR_START_DATE "2021-04-12")
+    set(CCI_VERSION_START_DATE "2021-05-10")
+    set(CCI_VERSION_SRC_LIST "BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/broker src/cci src/compat win/")
     execute_process(COMMAND ${GIT_EXECUTABLE} --version
     COMMAND awk "{ printf \"%s\", $3 }"
     OUTPUT_VARIABLE GIT_VERSION
     WORKING_DIRECTORY ${CCI_ROOT_PATH})
     if(GIT_VERSION VERSION_GREATER 1.7.6)
-      execute_process(COMMAND ${GIT_EXECUTABLE} rev-list --count --after ${CUBRID_MAJOR_START_DATE} HEAD
+      execute_process(COMMAND ${GIT_EXECUTABLE} rev-list --count --after ${CCI_VERSION_START_DATE} HEAD
         COMMAND awk "{ printf \"%04d\", $1 }"
         OUTPUT_VARIABLE commit_count RESULT_VARIABLE git_result
         ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -97,7 +98,7 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
       #
       # If both fixes fail, just replace execute_process(...) with set (commit_count 0). It is not a critical step to generate the project.
       # Also you may send us a message at https://www.cubrid.org/contact
-      execute_process(COMMAND ${GIT_EXECUTABLE} log --after ${CUBRID_MAJOR_START_DATE} --oneline
+      execute_process(COMMAND ${GIT_EXECUTABLE} log --after ${CCI_VERSION_START_DATE} --oneline
         COMMAND wc -l
         COMMAND awk "{ printf \"%04d\", $1 }"
         OUTPUT_VARIABLE commit_count RESULT_VARIABLE git_result

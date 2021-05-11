@@ -98,7 +98,7 @@ for %%i IN (%BUILD_LIST%) DO (
   call :BUILD_PREPARE
   if ERRORLEVEL 1 echo *** [%DATE% %TIME%] Preparing failed. & GOTO :EOF
   call :BUILD_%%i
-  if ERRORLEVEL 1 echo *** [%DATE% %TIME%] Failed target [%%i] & GOTO :EOF
+  if ERRORLEVEL 1 echo *** [%DATE% %TIME%] Failed target [%%i] & GOTO :SHOW_USAGE
   echo [%DATE% %TIME%] Leaving target [%%i]
   echo.
 )
@@ -130,7 +130,11 @@ echo Checking for root source path [%SOURCE_DIR%]...
 if NOT EXIST "%SOURCE_DIR%\src" echo Root path for source is not valid. & GOTO :EOF
 if NOT EXIST "%SOURCE_DIR%\BUILD_NUMBER" set VERSION_FILE=VERSION-DIST
 
-set SERIAL_START_DATE=2021-04-12
+set CCI_VERSION_START_DATE=2021-05-10
+call :ABSPATH "%SOURCE_DIR%\" SRC_DIR
+set CCI_VERSION_SRC_LIST=%SRC_DIR%BUILD_NUMBER %SRC_DIR%cci %SRC_DIR%cmake %SRC_DIR%CMakeLists.txt %SRC_DIR%external %SRC_DIR%include %SRC_DIR%src^/base %SRC_DIR%src^/broker %SRC_DIR%src^/cci %SRC_DIR%src^/compat %SRC_DIR%win^/
+
+echo CCI_VERSION_SRC_LIST : [%CCI_VERSION_SRC_LIST%]
 echo Checking build number with [%SOURCE_DIR%\%VERSION_FILE%]...
 for /f %%i IN (%SOURCE_DIR%\%VERSION_FILE%) DO set VERSION=%%i
 if ERRORLEVEL 1 echo Cannot check build number. & GOTO :EOF
@@ -144,9 +148,8 @@ if NOT "%EXTRA_VERSION%." == "." (
   for /f "tokens=1,* delims=-" %%a IN ("%EXTRA_VERSION%") DO set SERIAL_NUMBER=%%a
 ) else (
   if EXIST "%SOURCE_DIR%\.git" (
-    for /f "delims=" %%i in ('"%GIT_PATH%" rev-list --count --after %SERIAL_START_DATE% HEAD') do set SERIAL_NUMBER=0000%%i
+    for /f "delims=" %%i in ('"%GIT_PATH%" rev-list --count --after %CCI_VERSION_START_DATE% HEAD %CCI_VERSION_SRC_LIST%') do set SERIAL_NUMBER=0000%%i
   ) else (
-    set EXTRA_VERSION=0000
     set SERIAL_NUMBER=0000
   )
 )
@@ -166,7 +169,7 @@ echo Build install directory is [%BUILD_PREFIX%].
 
 if "%DIST_DIR%." == "." set DIST_DIR=%BUILD_DIR%\output
 call :ABSPATH "%DIST_DIR%" DIST_DIR
-echo Packages Ootput directory is [%DIST_DIR%].
+echo Packages Output directory is [%DIST_DIR%].
 if NOT EXIST "%DIST_DIR%" md %DIST_DIR%
 GOTO :EOF
 

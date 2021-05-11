@@ -4,4 +4,4 @@ build_x86_64*/
 win/output
 CMakeSettings.json
 .vs/
-
+CCI-VERSION-DIST

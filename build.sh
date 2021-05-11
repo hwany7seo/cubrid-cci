@@ -39,6 +39,7 @@ output_dir=""
 build_args="build"
 packages=""
 print_version_only=0
+git_count_list="BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/broker src/cci src/compat win/"
 
 # variables
 product_name="CUBRID"
@@ -119,11 +120,11 @@ function build_initialize ()
   minor_version=$(echo $version | cut -d . -f 2)
   patch_version=$(echo $version | cut -d . -f 3)
   extra_version=$(echo $version | cut -d . -f 4)
-  major_start_date='2021-04-12'
+  major_start_date='2021-05-10'
   if [ "x$extra_version" != "x" ]; then
     serial_number=$(echo $extra_version | cut -d - -f 1)
   elif [ -d $source_dir/.git ]; then
-    serial_number=$(cd $source_dir && git rev-list --after $major_start_date --count HEAD | awk '{ printf "%04d", $1 }' 2> /dev/null)
+    serial_number=$(cd $source_dir && git rev-list --after $major_start_date --count HEAD $git_count_list | awk '{ printf "%04d", $1 }' 2> /dev/null)
     [ $? -ne 0 ] && serial_number=$(cd $source_dir && git log --after $major_start_date --oneline | wc -l)
     #hash_tag=$(cd $source_dir && git rev-parse --short=7 HEAD)
     #extra_version="$serial_number-$hash_tag"
