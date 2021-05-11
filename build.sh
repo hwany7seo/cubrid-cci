@@ -39,7 +39,7 @@ output_dir=""
 build_args="build"
 packages=""
 print_version_only=0
-git_count_list="BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/broker src/cci src/compat win/"
+git_count_list="BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/cci win/"
 
 # variables
 product_name="CUBRID"

@@ -132,7 +132,7 @@ if NOT EXIST "%SOURCE_DIR%\BUILD_NUMBER" set VERSION_FILE=VERSION-DIST
 
 set CCI_VERSION_START_DATE=2021-05-10
 call :ABSPATH "%SOURCE_DIR%\" SRC_DIR
-set CCI_VERSION_SRC_LIST=%SRC_DIR%BUILD_NUMBER %SRC_DIR%cci %SRC_DIR%cmake %SRC_DIR%CMakeLists.txt %SRC_DIR%external %SRC_DIR%include %SRC_DIR%src^/base %SRC_DIR%src^/broker %SRC_DIR%src^/cci %SRC_DIR%src^/compat %SRC_DIR%win^/
+set CCI_VERSION_SRC_LIST=%SRC_DIR%BUILD_NUMBER %SRC_DIR%cci %SRC_DIR%cmake %SRC_DIR%CMakeLists.txt %SRC_DIR%external %SRC_DIR%include %SRC_DIR%src^/base %SRC_DIR%src^/cci %SRC_DIR%win^/
 
 echo CCI_VERSION_SRC_LIST : [%CCI_VERSION_SRC_LIST%]
 echo Checking build number with [%SOURCE_DIR%\%VERSION_FILE%]...

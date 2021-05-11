@@ -30,7 +30,7 @@
 #include "cubrid_getopt.h"
 #include "cas_cci.h"
 #include "cci_applier.h"
-#include "log_applier.h"
+#include "transaction_log_applier.h"
 #include "porting.h"
 
 #define free_and_init(ptr) \

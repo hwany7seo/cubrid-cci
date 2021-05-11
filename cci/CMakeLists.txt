@@ -76,7 +76,7 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
   find_package(Git)
   if(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
     set(CCI_VERSION_START_DATE "2021-05-10")
-    set(CCI_VERSION_SRC_LIST "BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/broker src/cci src/compat win/")
+    set(CCI_VERSION_SRC_LIST "BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/cci win/")
     execute_process(COMMAND ${GIT_EXECUTABLE} --version
     COMMAND awk "{ printf \"%s\", $3 }"
     OUTPUT_VARIABLE GIT_VERSION
@@ -134,7 +134,7 @@ set_property(TARGET cascci_object PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 add_library(cascci SHARED $<TARGET_OBJECTS:cascci_object>)
 set_target_properties(cascci PROPERTIES SOVERSION "${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}")
-set_target_properties(cascci PROPERTIES PUBLIC_HEADER "${CCI_DIR}/cas_cci.h;${COMPAT_DIR}/dbtran_def.h;${BROKER_DIR}/cas_error.h")
+set_target_properties(cascci PROPERTIES PUBLIC_HEADER "${CCI_DIR}/cas_cci.h;${CCI_DIR}/compat_dbtran_def.h;${CCI_DIR}/broker_cas_error.h")
 target_link_libraries(cascci LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(cascci ${CMAKE_DL_LIBS})
 

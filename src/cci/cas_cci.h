@@ -44,8 +44,8 @@
 /************************************************************************
  * IMPORTED OTHER HEADER FILES						*
  ************************************************************************/
-#include "cas_error.h"
-#include "dbtran_def.h"
+#include "broker_cas_error.h"
+#include "compat_dbtran_def.h"
 
 /************************************************************************
  * EXPORTED DEFINITIONS							*

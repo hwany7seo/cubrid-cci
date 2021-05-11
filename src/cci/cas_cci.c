@@ -77,12 +77,12 @@
 #include "cci_network.h"
 #include "cci_query_execute.h"
 #include "cci_t_set.h"
-#include "cas_protocol.h"
+#include "broker_cas_protocol.h"
 #include "cci_net_buf.h"
 #include "cci_util.h"
 #include "cci_log.h"
 #include "cci_map.h"
-#include "error_code.h"
+#include "base_error_code.h"
 
 #if defined(WINDOWS)
 int wsa_initialize ();

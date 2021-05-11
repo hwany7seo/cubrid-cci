@@ -175,21 +175,15 @@ message(STATUS "Build ${PROJECT_NAME} ${CUBRID_VERSION} ${TARGET_PLATFORM_BITS}b
 
 # source directories
 set(BASE_DIR                 ${CMAKE_SOURCE_DIR}/src/base)
-set(BROKER_DIR               ${CMAKE_SOURCE_DIR}/src/broker)
 set(CCI_DIR                  ${CMAKE_SOURCE_DIR}/src/cci)
-set(COMPAT_DIR               ${CMAKE_SOURCE_DIR}/src/compat)
 set(TOOLS_DIR                ${CMAKE_SOURCE_DIR}/src/tools)
-set(TRANSACTION_DIR          ${CMAKE_SOURCE_DIR}/src/transaction)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(
   include
   src/base
-  src/broker
   src/cci
-  src/compat
   src/tools
-  src/transaction
   )
 
 include(CheckFunctionExists)

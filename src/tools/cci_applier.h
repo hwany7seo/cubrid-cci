@@ -20,7 +20,7 @@
 
 #ident "$Id$"
 
-#include "error_code.h"
+#include "base_error_code.h"
 
 #define CA_IS_SERVER_DOWN(e) \
   (((e) == ER_TM_SERVER_DOWN_UNILATERALLY_ABORTED) \
