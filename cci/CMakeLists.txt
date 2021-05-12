@@ -75,7 +75,7 @@ if(VERSION_MATCHES_LENGTH GREATER 3)
 else(VERSION_MATCHES_LENGTH GREATER 3)
   find_package(Git)
   if(EXISTS "${CCI_ROOT_PATH}/.git" AND GIT_FOUND)
-    set(CCI_VERSION_START_DATE "2021-05-10")
+    set(CCI_VERSION_START_DATE "2021-05-12")
     set(CCI_VERSION_SRC_LIST "BUILD_NUMBER cci/ cmake/ CMakeLists.txt external/ include/ src/base src/cci win/")
     execute_process(COMMAND ${GIT_EXECUTABLE} --version
     COMMAND awk "{ printf \"%s\", $3 }"
@@ -117,8 +117,8 @@ else(VERSION_MATCHES_LENGTH GREATER 3)
 endif(VERSION_MATCHES_LENGTH GREATER 3)
 set(CCI_BUILD_NUMBER ${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}.${CCI_PATCH_VERSION}.${CCI_EXTRA_VERSION})
 message(STATUS "CCI_BUILD_NUMBER:[${CCI_BUILD_NUMBER}]")
-# TODO: for only cci version (version_cci.h)
-configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/version_cci.h)
+# TODO: for only cci version (cci_version.h)
+configure_file(${CCI_ROOT_PATH}/cmake/version_cci.h.cmake ${CMAKE_BINARY_DIR}/cci_version.h)
 
 if(WIN32)
 execute_process(COMMAND CMD /c echo ${CCI_BUILD_NUMBER}>CCI-VERSION-DIST

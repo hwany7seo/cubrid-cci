@@ -68,7 +68,7 @@
  ************************************************************************/
 
 
-#include "version_cci.h"
+#include "cci_version.h"
 
 #include "porting.h"
 #include "cci_common.h"
