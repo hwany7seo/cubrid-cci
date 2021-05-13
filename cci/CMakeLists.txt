@@ -139,14 +139,18 @@ target_link_libraries(cascci LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(cascci ${CMAKE_DL_LIBS})
 
 if(NOT WITH_CCI)
-#change RUNTIME_LIB OPTION for static lib
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-add_library(cascci_static STATIC $<TARGET_OBJECTS:cascci_object>)
-set_target_properties(cascci_static PROPERTIES OUTPUT_NAME cascci)
-target_link_libraries(cascci_static LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(cascci_static ${CMAKE_DL_LIBS})
-#change DEFAULT RUNTIME_LIB OPTION
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
+  #change RUNTIME_LIB OPTION for static lib
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  add_library(cascci_static STATIC $<TARGET_OBJECTS:cascci_object>)
+  set_target_properties(cascci_static PROPERTIES OUTPUT_NAME cascci)
+  target_link_libraries(cascci_static LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(cascci_static ${CMAKE_DL_LIBS})
+  #change DEFAULT RUNTIME_LIB OPTION
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
+  if(FOR_OTHER_DRIVER)
+    message(STATUS "Set Defineed For other driver (ODBC,OLEDB...)")
+    target_compile_definitions(cascci_static PRIVATE CCI_OLEDB)
+  endif(FOR_OTHER_DRIVER)
 endif(NOT WITH_CCI)
 
 if(WIN32)
