@@ -128,39 +128,49 @@ execute_process(COMMAND sh -c "echo ${CCI_BUILD_NUMBER}>CCI-VERSION-DIST"
         WORKING_DIRECTORY ${CCI_ROOT_PATH})
 endif(WIN32)
 
-add_library(cascci_object OBJECT ${CASCCI_SOURCES})
-target_include_directories(cascci_object PRIVATE ${EP_INCLUDES})
-set_property(TARGET cascci_object PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-add_library(cascci SHARED $<TARGET_OBJECTS:cascci_object>)
+add_library(cascci SHARED ${CASCCI_SOURCES})
 set_target_properties(cascci PROPERTIES SOVERSION "${CCI_MAJOR_VERSION}.${CCI_MINOR_VERSION}")
 set_target_properties(cascci PROPERTIES PUBLIC_HEADER "${CCI_DIR}/cas_cci.h;${CCI_DIR}/compat_dbtran_def.h;${CCI_DIR}/broker_cas_error.h")
+target_include_directories(cascci PRIVATE ${EP_INCLUDES})
 target_link_libraries(cascci LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(cascci ${CMAKE_DL_LIBS})
 
 if(NOT WITH_CCI)
-  #change RUNTIME_LIB OPTION for static lib
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-  add_library(cascci_static STATIC $<TARGET_OBJECTS:cascci_object>)
-  set_target_properties(cascci_static PROPERTIES OUTPUT_NAME cascci)
+  add_library(cascci_static STATIC ${CASCCI_SOURCES})
+  target_include_directories(cascci_static PRIVATE ${EP_INCLUDES})
   target_link_libraries(cascci_static LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
   target_link_libraries(cascci_static ${CMAKE_DL_LIBS})
-  #change DEFAULT RUNTIME_LIB OPTION
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
-  if(FOR_OTHER_DRIVER)
-    message(STATUS "Set Defineed For other driver (ODBC,OLEDB...)")
-    target_compile_definitions(cascci_static PRIVATE CCI_OLEDB)
-  endif(FOR_OTHER_DRIVER)
+  set_target_properties(cascci_static PROPERTIES OUTPUT_NAME cascci)
+  if(WIN32)
+    target_compile_options(cascci_static PRIVATE 
+    "$<$<CONFIG:Debug>:/MTd>"
+    "$<$<CONFIG:MinSizeRel>:/MT>"
+    "$<$<CONFIG:Release>:/MT>"
+    "$<$<CONFIG:RelWithDebInfo>:/MT>"
+    )
+    if(TARGET_PLATFORM_BITS EQUAL 32)
+      target_compile_definitions(cascci_static PRIVATE _USE_32BIT_TIME_T)
+    endif(TARGET_PLATFORM_BITS EQUAL 32)
+    if(FOR_OTHER_DRIVER)
+      target_compile_definitions(cascci_static PRIVATE CCI_OLEDB)
+      target_compile_definitions(cascci_static PRIVATE CAS_CCI)
+    else(FOR_OTHER_DRIVER)
+      target_compile_definitions(cascci_static PRIVATE CAS_CCI_DL)
+    endif(FOR_OTHER_DRIVER)
+    set_target_properties(cascci_static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:libcmt.lib" LINK_FLAGS_DEBUG "/NODEFAULTLIB:msvcrt.lib")
+    target_link_libraries(cascci_static LINK_PRIVATE ws2_32)
+  endif(WIN32) 
 endif(NOT WITH_CCI)
 
 if(WIN32)
-  target_compile_definitions(cascci PRIVATE CAS_CCI_DL)
   if(TARGET_PLATFORM_BITS EQUAL 32)
     target_compile_definitions(cascci PRIVATE _USE_32BIT_TIME_T)
   endif(TARGET_PLATFORM_BITS EQUAL 32)
   if(FOR_OTHER_DRIVER)
-    message(STATUS "Set Defineed For other driver (ODBC,OLEDB...)")
     target_compile_definitions(cascci PRIVATE CCI_OLEDB)
+    target_compile_definitions(cascci PRIVATE CAS_CCI)
+  else(FOR_OTHER_DRIVER)
+    target_compile_definitions(cascci PRIVATE CAS_CCI_DL)
   endif(FOR_OTHER_DRIVER)
   set_target_properties(cascci PROPERTIES LINK_FLAGS "/DEF:\"${CMAKE_SOURCE_DIR}/win/cascci/cascci.def\"" LINK_FLAGS_RELEASE "/NODEFAULTLIB:libcmt.lib" LINK_FLAGS_DEBUG "/NODEFAULTLIB:msvcrt.lib")
   target_link_libraries(cascci LINK_PRIVATE ws2_32)
@@ -168,6 +178,7 @@ endif(WIN32)
 
 if(WITH_CCI)
 add_dependencies(cascci ${EP_TARGETS})
+add_dependencies(cascci_static ${EP_TARGETS})
 endif(WITH_CCI)
 
 install(TARGETS cascci
