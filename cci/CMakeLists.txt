@@ -159,7 +159,8 @@ if(NOT WITH_CCI)
     endif(FOR_OTHER_DRIVER)
     set_target_properties(cascci_static PROPERTIES LINK_FLAGS_RELEASE "/NODEFAULTLIB:libcmt.lib" LINK_FLAGS_DEBUG "/NODEFAULTLIB:msvcrt.lib")
     target_link_libraries(cascci_static LINK_PRIVATE ws2_32)
-  endif(WIN32) 
+  endif(WIN32)
+  add_dependencies(cascci_static ${EP_TARGETS})
 endif(NOT WITH_CCI)
 
 if(WIN32)
@@ -178,7 +179,6 @@ endif(WIN32)
 
 if(WITH_CCI)
 add_dependencies(cascci ${EP_TARGETS})
-add_dependencies(cascci_static ${EP_TARGETS})
 endif(WITH_CCI)
 
 install(TARGETS cascci
