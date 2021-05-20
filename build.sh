@@ -269,7 +269,7 @@ function build_package ()
   package_basename="$product_name-CCI-$version-Linux.$build_target"
   package_name="$package_basename.tar.gz"
   package_dir=$product_name-CCI-$version-Linux-$build_target
-  (cd $prefix_dir && mkdir -p $prefix_dir/$package_dir && cp -rf include lib $prefix_dir/$package_dir && tar zcvfP $package_name $package_dir && mv $package_name $build_dir)
+  (cd $prefix_dir && mkdir -p $prefix_dir/$package_dir && cp -rf cci $prefix_dir/$package_dir && tar zcvfP $package_name $package_dir && mv $package_name $build_dir)
   if [ $? -eq 0 ]; then
     output_packages="$output_packages $package_name"
     # clean temp directory for pack

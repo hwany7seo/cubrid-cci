@@ -377,6 +377,7 @@ endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 set(COMMON_DEFS SYSV MAXPATHLEN=1024 -D_REENTRANT)
 
 # For CUBRID environment variable option
+  set(CUBRID_CCIDIR cci)
   set(CUBRID_BINDIR bin)
   set(CUBRID_LIBDIR lib)
   set(CUBRID_SRCDIR src)
