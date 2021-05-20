@@ -68,6 +68,7 @@
 #include "cci_log.h"
 #include "cci_network.h"
 #include "broker_cas_protocol.h"
+#include "broker_cas_error.h"
 #include "cci_query_execute.h"
 #include "cci_util.h"
 #include "cci_ssl.h"

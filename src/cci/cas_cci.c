@@ -71,6 +71,7 @@
 #include "cci_log.h"
 #include "cci_map.h"
 #include "base_error_code.h"
+#include "broker_cas_error.h"
 
 #if defined(WINDOWS)
 int wsa_initialize ();
