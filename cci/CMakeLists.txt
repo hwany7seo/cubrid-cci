@@ -140,6 +140,7 @@ if(NOT WITH_CCI)
   target_include_directories(cascci_static PRIVATE ${EP_INCLUDES})
   target_link_libraries(cascci_static LINK_PRIVATE ${EP_LIBS} ${CMAKE_THREAD_LIBS_INIT})
   target_link_libraries(cascci_static ${CMAKE_DL_LIBS})
+  set_target_properties(cascci_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
   set_target_properties(cascci_static PROPERTIES OUTPUT_NAME cascci)
   if(WIN32)
     target_compile_options(cascci_static PRIVATE 
