@@ -31,6 +31,12 @@
 
 /*
  * cas_cci.h -
+ *
+ * CAUTION!
+ *
+ * In case of common,
+ * engine source (src/broker/broker_cas_cci.h) must be updated,
+ * becuase CCI source and Engine source have been separated.
  */
 
 #ifndef	_CAS_CCI_H_
@@ -961,5 +967,13 @@ extern "C"
 /************************************************************************
  * EXPORTED VARIABLES							*
  ************************************************************************/
+
+/*
+ * CAUTION!
+ *
+ * In case of common,
+ * engine source (src/cci/broker_cas_cci.h) must be updated,
+ * becuase CCI source and Engine source have been separated.
+ */
 
 #endif				/* _CAS_CCI_H_ */
