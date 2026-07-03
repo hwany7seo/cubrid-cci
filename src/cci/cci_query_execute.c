@@ -1740,6 +1740,11 @@ qe_get_data (T_CON_HANDLE * con_handle, T_REQ_HANDLE * req_handle, int col_no, i
 	{
 	  *((void **) value) = NULL;
 	}
+      else if (a_type == CCI_A_TYPE_BIT && data_size == 0)
+	{
+	  ((T_CCI_BIT *) value)->size = 0;
+	  ((T_CCI_BIT *) value)->buf = NULL;
+	}
       return 0;
     }
 
