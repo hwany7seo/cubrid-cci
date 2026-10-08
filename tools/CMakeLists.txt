@@ -16,7 +16,7 @@
 # 
 #
 
-if(UNIX)
+if(UNIX AND NOT FOR_OTHER_DRIVER)
   set(CCI_APPLIER_SOURCES
     ${CCI_TOOLS_DIR}/cci_applier.c
     ${CCI_BASE_DIR}/cubrid_getopt_long.c

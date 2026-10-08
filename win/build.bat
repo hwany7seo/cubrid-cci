@@ -230,6 +230,11 @@ GOTO :EOF
 
 
 :BUILD_CCI_PACKAGE
+if "%FOR_OTHER_DRIVER%" == "true" (
+  echo The /other build makes the static archive only - there is no package to create.
+  GOTO :EOF
+)
+
 echo Buiding CCI package in %BUILD_DIR% ...
 if NOT EXIST %BUILD_DIR% echo Cannot found built directory. & GOTO :EOF
 cd /d %BUILD_DIR%

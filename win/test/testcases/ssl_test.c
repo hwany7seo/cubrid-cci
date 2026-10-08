@@ -51,6 +51,8 @@
 #define MAX_LINE_LEN    1024
 #define MAX_URL_LEN     1024
 
+#define MAX_DETAIL_LEN  (MAX_VALUE_LEN + 64)
+
 typedef struct
 {
   char host[MAX_VALUE_LEN];
@@ -344,12 +346,18 @@ run_query (int con, T_CCI_ERROR * err)
 /*
  * The two negative controls. Connecting is supposed to fail here, so a connection that
  * comes up is the failure, and it is closed again before saying so.
+ *
+ * Failing is not enough on its own - a closed port or bad credentials come back negative
+ * too, and accepting those would say nothing about the SSL mode. Only the broker turning
+ * away a client of the wrong kind counts, which it does with CAS_ER_SSL_TYPE_NOT_ALLOWED
+ * before TLS is negotiated. Measured: a mode mismatch gives -10103 either way, an
+ * unreachable port -20016, a bad database -20001.
  */
 static void
 expect_refused (const char *what, const char *host, int port, int use_ssl)
 {
   T_CCI_ERROR err;
-  char detail[256];
+  char detail[MAX_DETAIL_LEN];
   int con;
 
   step_begin (what);
@@ -364,13 +372,20 @@ expect_refused (const char *what, const char *host, int port, int use_ssl)
       return;
     }
 
-  sprintf (detail, "refused, cci %d", con);
-  step_ok (detail);
-  if (err.err_msg[0] != '\0')
+  if (con != CAS_ER_SSL_TYPE_NOT_ALLOWED)
     {
-      printf ("       server    : %d, %s\n", err.err_code, err.err_msg);
+      failed_steps++;
+      printf ("FAIL (refused with cci %d, not the SSL mode rejection %d)\n", con, CAS_ER_SSL_TYPE_NOT_ALLOWED);
+      if (err.err_msg[0] != '\0')
+        {
+          printf ("       server    : %d, %s\n", err.err_code, err.err_msg);
+        }
       fflush (stdout);
+      return;
     }
+
+  snprintf (detail, sizeof (detail), "SSL mode rejected it, cci %d", con);
+  step_ok (detail);
 }
 
 int
@@ -378,7 +393,6 @@ main (int argc, char *argv[])
 {
   const char *config_path = "cci_test.conf";
   char version[64];
-  char detail[256];
   int major = 0, minor = 0, patch = 0;
   T_CCI_ERROR err;
   int con;
@@ -400,7 +414,7 @@ main (int argc, char *argv[])
   strcpy (version, "unknown");
   if (cci_get_version (&major, &minor, &patch) >= 0)
     {
-      sprintf (version, "%d.%d.%d", major, minor, patch);
+      snprintf (version, sizeof (version), "%d.%d.%d", major, minor, patch);
     }
 
   printf ("==========================================================\n");
@@ -475,8 +489,7 @@ main (int argc, char *argv[])
    * Without this the test would pass just as happily against a driver that never
    * enabled SSL at all: it is the refusal that shows the broker is in SSL mode.
    */
-  sprintf (detail, "useSSL=false against %s:%d is refused", config.ssl_host, config.ssl_port);
-  expect_refused (detail, config.ssl_host, config.ssl_port, 0);
+  expect_refused ("useSSL=false against the SSL broker", config.ssl_host, config.ssl_port, 0);
 
   /*
    * And the mirror image, whenever a plain broker is around to try it on: the driver
@@ -484,8 +497,7 @@ main (int argc, char *argv[])
    */
   if (config.ssl_port != config.port || strcmp (config.ssl_host, config.host) != 0)
     {
-      sprintf (detail, "useSSL=true against %s:%d is refused", config.host, config.port);
-      expect_refused (detail, config.host, config.port, 1);
+      expect_refused ("useSSL=true against the plain broker", config.host, config.port, 1);
     }
   else
     {
